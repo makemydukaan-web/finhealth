@@ -5,20 +5,37 @@ export interface Question {
 }
 
 export interface QuizState {
-  currentStep: number; // 0 = landing, 1-7 = questions, 8 = loading, 9 = results
+  // 0 = landing, 1–8 = questions, 9 = loading, 10 = results
+  currentStep: number;
   answers: Record<number, string>;
 }
 
-export interface AssetAllocation {
+export interface PillarBreakdown {
+  savingsRate: number;      // max 25
+  emergencyFund: number;    // max 25
+  riskAlignment: number;    // max 20
+  debtHealth: number;       // max 15
+  insurance: number;        // max 15
+}
+
+export interface ScoreResult {
+  score: number;
   equity: number;
   debt: number;
   gold: number;
+  emergencyRequired: number;
+  pillarBreakdown: PillarBreakdown;
+  actionItems: string[];
 }
 
-export interface AssessmentResult {
-  allocation: AssetAllocation;
-  emergency_fund: number;
-  health_score: number;
-  action_items: string[];
-  reasoning: string;
+export interface LeadData {
+  name: string;
+  email: string;
+  phone?: string;
+  score: number;
+  equity_percent: number;
+  debt_percent: number;
+  gold_percent: number;
+  emergency_required: number;
+  interested: boolean;
 }
