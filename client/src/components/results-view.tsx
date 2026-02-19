@@ -1,192 +1,449 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { AssessmentResult } from "@/lib/types";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScoreResult, LeadData } from "@/lib/types";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
+import {
+  Shield,
+  TrendingUp,
+  CheckCircle,
+  AlertTriangle,
+  Loader2,
+  CheckCircle2,
+  ArrowRight,
+} from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface ResultsViewProps {
-  result: AssessmentResult;
+  result: ScoreResult;
+}
+
+const PILLAR_CONFIG = [
+  { key: "savingsRate", label: "Savings Rate", max: 25, icon: TrendingUp },
+  { key: "emergencyFund", label: "Emergency Fund", max: 25, icon: Shield },
+  { key: "riskAlignment", label: "Risk Alignment", max: 20, icon: TrendingUp },
+  { key: "debtHealth", label: "Debt Health", max: 15, icon: AlertTriangle },
+  { key: "insurance", label: "Insurance Cover", max: 15, icon: Shield },
+] as const;
+
+const ALLOCATION_COLORS = {
+  equity: "#FF9933",
+  debt: "#000080",
+  gold: "#EAB308",
+};
+
+function getScoreColor(score: number) {
+  if (score < 40) return "#ef4444";
+  if (score < 60) return "#f97316";
+  if (score < 75) return "#eab308";
+  return "#22c55e";
+}
+
+function getScoreLabel(score: number) {
+  if (score < 40) return "Needs Attention";
+  if (score < 60) return "Getting Started";
+  if (score < 75) return "On the Right Track";
+  return "Excellent Shape";
+}
+
+function formatAmount(amount: number): string {
+  if (amount >= 10_000_000) return `₹${(amount / 10_000_000).toFixed(1)} Crores`;
+  if (amount >= 100_000) return `₹${(amount / 100_000).toFixed(1)} Lakhs`;
+  return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 export function ResultsView({ result }: ResultsViewProps) {
-  const data = [
-    { name: 'Equity', value: result.allocation.equity, color: 'var(--color-chart-1)' },
-    { name: 'Debt', value: result.allocation.debt, color: 'var(--color-chart-2)' },
-    { name: 'Gold', value: result.allocation.gold, color: 'var(--color-chart-4)' },
+  const [form, setForm] = useState({ name: "", email: "", phone: "", notify: true });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const scoreColor = getScoreColor(result.score);
+  const circumference = 2 * Math.PI * 54;
+  const dashOffset = circumference - (circumference * result.score) / 100;
+
+  const pieData = [
+    { name: "Equity", value: result.equity },
+    { name: "Debt", value: result.debt },
+    { name: "Gold", value: result.gold },
   ];
 
-  const getHealthColor = (score: number) => {
-    if (score < 40) return "text-red-500";
-    if (score < 75) return "text-yellow-500";
-    return "text-green-600";
-  };
-
-  const getHealthLabel = (score: number) => {
-    if (score < 40) return "Needs Attention";
-    if (score < 75) return "Good Start";
-    return "Excellent";
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const leadData: LeadData = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || undefined,
+        score: result.score,
+        equity_percent: result.equity,
+        debt_percent: result.debt,
+        gold_percent: result.gold,
+        emergency_required: Math.round(result.emergencyRequired),
+        interested: form.notify,
+      };
+      const { error: sbError } = await supabase.from("leads").insert(leadData);
+      if (sbError) throw sbError;
+      setSuccess(true);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-w-4xl mx-auto px-4 py-8 pb-20 space-y-8"
+      className="max-w-2xl mx-auto px-4 py-8 pb-20 space-y-6"
     >
-      <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold mb-2">Your Financial Health Report</h2>
-        <p className="text-muted-foreground">Personalized recommendations based on your profile</p>
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-foreground">
+          Your Financial Health Report
+        </h2>
+        <p className="text-muted-foreground text-sm sm:text-base">
+          Personalised score based on your profile
+        </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Health Score Card */}
-        <Card className="overflow-hidden border-none shadow-lg shadow-gray-200/50">
-          <CardHeader className="bg-gradient-to-br from-primary/10 to-transparent pb-2">
-            <CardTitle className="text-lg font-medium text-muted-foreground">Financial Health Score</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 flex flex-col items-center justify-center min-h-[200px]">
-            <div className="relative flex items-center justify-center">
-              <svg className="w-40 h-40 transform -rotate-90">
-                <circle
-                  cx="80"
-                  cy="80"
-                  r="70"
-                  stroke="currentColor"
-                  strokeWidth="10"
-                  fill="transparent"
-                  className="text-gray-100"
-                />
-                <circle
-                  cx="80"
-                  cy="80"
-                  r="70"
-                  stroke="currentColor"
-                  strokeWidth="10"
-                  fill="transparent"
-                  strokeDasharray={440}
-                  strokeDashoffset={440 - (440 * result.health_score) / 100}
-                  className={`${getHealthColor(result.health_score)} transition-all duration-1000 ease-out`}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-5xl font-bold ${getHealthColor(result.health_score)}`}>
-                  {result.health_score}
-                </span>
-                <span className="text-sm font-medium text-muted-foreground mt-1">
-                  / 100
-                </span>
-              </div>
-            </div>
-            <p className={`mt-4 font-semibold ${getHealthColor(result.health_score)}`}>
-              {getHealthLabel(result.health_score)}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Asset Allocation Card */}
-        <Card className="overflow-hidden border-none shadow-lg shadow-gray-200/50">
-          <CardHeader className="bg-gradient-to-br from-secondary/10 to-transparent pb-2">
-            <CardTitle className="text-lg font-medium text-muted-foreground">Recommended Allocation</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[250px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36} 
-                  iconType="circle"
-                  formatter={(value, entry: any) => (
-                    <span className="text-sm font-medium ml-1 text-foreground">
-                      {value} ({entry.payload.value}%)
-                    </span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Emergency Fund */}
-      <Card className="bg-blue-50/50 border-blue-100">
-        <CardContent className="p-6 flex items-start gap-4">
-          <div className="p-3 bg-blue-100 text-blue-600 rounded-full mt-1">
-            <ShieldCheck className="w-6 h-6" />
+      {/* Score Circle */}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        data-testid="score-circle"
+        className="flex flex-col items-center py-6 rounded-2xl bg-card border border-border/60 shadow-sm"
+      >
+        <p className="text-sm font-medium text-muted-foreground mb-4">
+          Financial Health Score
+        </p>
+        <div className="relative w-36 h-36">
+          <svg className="w-36 h-36 -rotate-90" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="54" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+            <motion.circle
+              cx="60" cy="60" r="54"
+              fill="none"
+              stroke={scoreColor}
+              strokeWidth="10"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: dashOffset }}
+              transition={{ duration: 1.2, ease: "easeOut", delay: 0.4 }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-4xl font-bold" style={{ color: scoreColor }}>
+              {result.score}
+            </span>
+            <span className="text-xs text-muted-foreground">/ 100</span>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-blue-900 mb-1">Emergency Fund Target</h3>
-            <p className="text-3xl font-bold text-blue-700 mb-2">
-              ₹{(result.emergency_fund / 100000).toFixed(1)} Lakhs
-            </p>
-            <p className="text-blue-600/80 text-sm">
-              Keep this amount in a liquid fund or high-interest savings account. It covers 6 months of expenses.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <p className="mt-3 text-base font-semibold" style={{ color: scoreColor }}>
+          {getScoreLabel(result.score)}
+        </p>
+      </motion.div>
 
-      {/* Action Items */}
-      <div className="bg-card rounded-2xl p-6 md:p-8 shadow-sm border border-border/50">
-        <h3 className="text-xl font-semibold mb-6 flex items-center">
-          <span className="bg-primary/10 text-primary p-2 rounded-lg mr-3">
-            <CheckCircle2 className="w-5 h-5" />
-          </span>
-          Your Action Plan
-        </h3>
-        <div className="space-y-4">
-          {result.action_items.map((item, index) => (
-            <div key={index} className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors">
-              <div className="mt-0.5 min-w-[20px]">
-                <div className="w-5 h-5 rounded border-2 border-primary/40 flex items-center justify-center">
-                  {/* Empty checkbox for visual */}
+      {/* Pillar Breakdown */}
+      <div data-testid="pillar-breakdown" className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-foreground mb-4">Score Breakdown</h3>
+        <div className="space-y-3">
+          {PILLAR_CONFIG.map(({ key, label, max }, i) => {
+            const score = result.pillarBreakdown[key];
+            const pct = Math.round((score / max) * 100);
+            const color = pct >= 80 ? "#22c55e" : pct >= 50 ? "#f97316" : "#ef4444";
+            return (
+              <motion.div
+                key={key}
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 * i }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-foreground">{label}</span>
+                  <span className="text-sm font-semibold" style={{ color }}>
+                    {score}/{max}
+                  </span>
                 </div>
-              </div>
-              <p className="text-foreground/90 leading-relaxed">{item}</p>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: color }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 + 0.1 * i }}
+                  />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Asset Allocation Pie */}
+      <div data-testid="allocation-chart" className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-foreground mb-1">Recommended Allocation</h3>
+        <p className="text-xs text-muted-foreground mb-4">Based on your age and risk profile</p>
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={55}
+                outerRadius={75}
+                paddingAngle={4}
+                dataKey="value"
+              >
+                <Cell fill={ALLOCATION_COLORS.equity} />
+                <Cell fill={ALLOCATION_COLORS.debt} />
+                <Cell fill={ALLOCATION_COLORS.gold} />
+              </Pie>
+              <Tooltip
+                formatter={(value: number) => [`${value}%`, ""]}
+                contentStyle={{
+                  borderRadius: "10px",
+                  border: "none",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                  fontSize: "13px",
+                }}
+              />
+              <Legend
+                iconType="circle"
+                iconSize={8}
+                formatter={(value) => (
+                  <span className="text-xs font-medium text-foreground ml-1">
+                    {value}
+                  </span>
+                )}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        {/* Allocation chips */}
+        <div className="flex gap-3 justify-center mt-2">
+          {pieData.map((d, i) => (
+            <div
+              key={d.name}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold"
+              style={{
+                background: `${Object.values(ALLOCATION_COLORS)[i]}18`,
+                color: Object.values(ALLOCATION_COLORS)[i],
+              }}
+            >
+              {d.name} {d.value}%
             </div>
           ))}
         </div>
       </div>
 
-      {/* Reasoning */}
-      <div className="bg-muted/30 p-6 rounded-xl border border-dashed border-muted-foreground/20">
-        <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">Advisor Note</h4>
-        <p className="text-foreground/80 italic">"{result.reasoning}"</p>
+      {/* Emergency Fund */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        data-testid="emergency-fund-card"
+        className="rounded-2xl p-5 border"
+        style={{ background: "rgba(19,136,8,0.06)", borderColor: "rgba(19,136,8,0.2)" }}
+      >
+        <div className="flex items-start gap-4">
+          <div className="p-2.5 rounded-xl" style={{ background: "rgba(19,136,8,0.12)" }}>
+            <Shield className="w-5 h-5" style={{ color: "#138808" }} />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold mb-0.5" style={{ color: "#0d6b05" }}>
+              Emergency Fund Target
+            </h3>
+            <p className="text-2xl font-bold mb-1" style={{ color: "#138808" }}>
+              {formatAmount(result.emergencyRequired)}
+            </p>
+            <p className="text-xs" style={{ color: "#138808", opacity: 0.8 }}>
+              6 months of expenses — keep in a liquid fund or high-yield savings account.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Action Items */}
+      <div data-testid="action-items" className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4" style={{ color: "#FF9933" }} />
+          Your 3-Step Action Plan
+        </h3>
+        <div className="space-y-3">
+          {result.actionItems.map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 * index }}
+              className="flex gap-3 p-3.5 rounded-xl"
+              style={{ background: "rgba(255,153,51,0.06)" }}
+            >
+              <span
+                className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                style={{ background: "#FF9933" }}
+              >
+                {index + 1}
+              </span>
+              <p className="text-sm text-foreground leading-relaxed">{item}</p>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
-      {/* CTA */}
-      <div className="mt-12 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl p-8 text-center shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-12 bg-white/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-        
-        <h3 className="text-2xl font-bold mb-3 relative z-10">Want a detailed roadmap?</h3>
-        <p className="text-gray-300 mb-8 max-w-lg mx-auto relative z-10">
-          Get a 1-on-1 consultation with a SEBI registered investment advisor to execute this plan.
-        </p>
-        <Button 
-          size="lg" 
-          className="bg-primary hover:bg-primary/90 text-white font-bold px-8 h-14 rounded-full shadow-lg shadow-primary/25 relative z-10"
+      {/* Workshop CTA */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        data-testid="workshop-section"
+        className="rounded-2xl overflow-hidden border"
+        style={{ borderColor: "rgba(255,153,51,0.25)" }}
+      >
+        {/* Header */}
+        <div
+          className="p-5 text-white relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #000080 0%, #1a1a8c 100%)" }}
         >
-          Book 30-min Call for ₹999
-          <ArrowRight className="ml-2 w-5 h-5" />
-        </Button>
-      </div>
+          <div
+            className="absolute -right-8 -top-8 w-32 h-32 rounded-full"
+            style={{ background: "rgba(255,153,51,0.12)" }}
+          />
+          <div className="relative">
+            <span
+              className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-2"
+              style={{ background: "rgba(255,153,51,0.2)", color: "#FF9933" }}
+            >
+              Live Wealth Workshop
+            </span>
+            <h3 className="text-lg font-bold mb-1">
+              Want a deeper financial blueprint?
+            </h3>
+            <p className="text-sm opacity-80 mb-0">
+              Join our expert-led workshop and build a personalised wealth roadmap.
+            </p>
+          </div>
+        </div>
+
+        {/* Form */}
+        <div className="p-5 bg-card">
+          {success ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              data-testid="success-message"
+              className="flex flex-col items-center text-center py-4 gap-3"
+            >
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(19,136,8,0.12)" }}
+              >
+                <CheckCircle className="w-6 h-6" style={{ color: "#138808" }} />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">You're on the list!</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  We'll notify you when the next session is live.
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-3" data-testid="workshop-form">
+              <p className="text-sm font-medium text-foreground mb-3">
+                Notify me about upcoming sessions — Live Workshop at{" "}
+                <span className="font-bold" style={{ color: "#138808" }}>
+                  ₹999
+                </span>
+              </p>
+
+              <div>
+                <input
+                  data-testid="workshop-name"
+                  type="text"
+                  placeholder="Your name *"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 transition-all"
+                  style={{ "--tw-ring-color": "#FF9933" } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <input
+                  data-testid="workshop-email"
+                  type="email"
+                  placeholder="Email address *"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 transition-all"
+                  style={{ "--tw-ring-color": "#FF9933" } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <input
+                  data-testid="workshop-phone"
+                  type="tel"
+                  placeholder="Phone number (optional)"
+                  value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 transition-all"
+                  style={{ "--tw-ring-color": "#FF9933" } as React.CSSProperties}
+                />
+              </div>
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  data-testid="workshop-notify-checkbox"
+                  type="checkbox"
+                  checked={form.notify}
+                  onChange={(e) => setForm((f) => ({ ...f, notify: e.target.checked }))}
+                  className="w-4 h-4 rounded"
+                  style={{ accentColor: "#FF9933" }}
+                />
+                <span className="text-sm text-foreground/80">
+                  Notify me about upcoming sessions
+                </span>
+              </label>
+
+              {error && (
+                <p data-testid="workshop-error" className="text-sm text-red-500">
+                  {error}
+                </p>
+              )}
+
+              <button
+                data-testid="workshop-submit-btn"
+                type="submit"
+                disabled={submitting || !form.name.trim() || !form.email.trim()}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: "#FF9933" }}
+              >
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    Reserve My Spot
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
