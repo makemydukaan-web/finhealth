@@ -49,6 +49,11 @@ export function QuestionView({
         {/* Progress bar */}
         <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
           <motion.div
+            role="progressbar"
+            aria-valuenow={currentStep}
+            aria-valuemin={1}
+            aria-valuemax={totalSteps}
+            data-testid="progress-bar"
             className="h-full rounded-full"
             style={{ background: "#FF9933" }}
             initial={{ width: `${((currentStep - 1) / totalSteps) * 100}%` }}
