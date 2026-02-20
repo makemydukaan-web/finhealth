@@ -96,7 +96,7 @@ finHealth is a Financial Health Score web app for Indian salaried professionals.
 
 ## What's Been Implemented (Phase 1 Complete)
 
-### 2026-02-19 — Initial Implementation
+### 2026-02-19 — Phase 1 Implementation
 - [x] Landing page with feature pills and CTA
 - [x] 8-question quiz flow with progress bar and back button
 - [x] Deterministic scoring engine (scoring.ts + allocation.ts)
@@ -104,12 +104,25 @@ finHealth is a Financial Health Score web app for Indian salaried professionals.
 - [x] 3 deterministic action items based on weakest pillars
 - [x] Workshop interest form with Supabase client integration
 - [x] Graceful error handling for Supabase submissions
-- [x] Cloudflare Pages `_redirects` file (correct plain text format)
+- [x] Cloudflare Pages `_redirects` file
 - [x] Build outDir set to `dist` for Cloudflare Pages
-- [x] Accessibility: ARIA roles on progress bar
-- [x] All interactive elements have data-testid attributes
-- [x] Poppins + Inter fonts loaded from Google Fonts
-- [x] Saffron/Green/Navy color scheme
+
+### 2026-02-20 — Phase 2: Deep Wealth Diagnostic
+- [x] "Unlock Detailed Wealth Report" CTA on Phase 1 results page
+- [x] 5-step Deep Wealth Diagnostic wizard (/deep-assessment)
+  - Step 1: Income & Stability (age, income, secondary income, job stability, dependents)
+  - Step 2: Expenses & EMIs (expenses, EMI, housing status + live cash flow summary)
+  - Step 3: Assets Snapshot (equity, fixed income, EPF/PPF/NPS, gold, real estate, cash + live net worth)
+  - Step 4: Protection Layer (life cover, health cover, emergency fund + status card)
+  - Step 5: Goals & Risk (retirement age, primary goal, risk comfort)
+- [x] Step validation (Continue disabled until required fields filled)
+- [x] Dynamic live hints (annual income, savings rate, net worth, protection gaps)
+- [x] calculateWealthScore() — 6-pillar deterministic scoring engine (deepScoring.ts)
+- [x] Deep Result page (/deep-result) with wealth score circle, radar chart, pillar bars, alerts, recommendations
+- [x] CTA toggle: Wealth Masterclass (₹999) + 1:1 Portfolio Review
+- [x] Supabase lead capture for deep_assessment_leads table
+- [x] sessionStorage for data passing between wizard → result pages
+- [x] Wouter routing for all pages
 
 ---
 
