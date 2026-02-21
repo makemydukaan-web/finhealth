@@ -325,12 +325,12 @@ export function ResultsView({ result, answers }: ResultsViewProps) {
         </div>
       </div>
 
-      {/* Unlock Deep Diagnostic CTA */}
+      {/* Unlock Ignite Dashboard CTA */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        data-testid="unlock-deep-diagnostic"
+        data-testid="unlock-ignite-diagnostic"
         className="rounded-2xl overflow-hidden border-2"
         style={{ borderColor: '#000080', background: 'linear-gradient(135deg, #000080 0%, #1a1a8c 100%)' }}
       >
@@ -339,26 +339,28 @@ export function ResultsView({ result, answers }: ResultsViewProps) {
           <div className="absolute -left-4 -top-4 w-20 h-20 rounded-full" style={{ background: 'rgba(255,255,255,0.03)' }} />
           <div className="relative">
             <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full mb-3" style={{ background: 'rgba(255,153,51,0.2)', color: '#FF9933' }}>
-              FREE · 5 Minutes
+              <Sparkles className="w-3 h-3" />
+              FREE · 2 Minutes
             </span>
-            <h3 className="text-lg sm:text-xl font-bold mb-2">Unlock Your Detailed Wealth Report</h3>
+            <h3 className="text-lg sm:text-xl font-bold mb-2">Unlock Your Ignite Dashboard</h3>
             <p className="text-sm opacity-80 mb-5 leading-relaxed">
-              Go deeper with a 6-pillar Wealth Diagnostic. Get your net worth breakdown, allocation suitability score and advisor-grade recommendations.
+              Get your complete Wealth Score with retirement projections, portfolio analysis, and personalized action plan.
             </p>
             <div className="flex flex-wrap gap-2 mb-5">
-              {['Net Worth Analysis', 'Allocation Check', '6-Pillar Score', 'Risk Profile'].map(tag => (
+              {['Retirement Simulator', 'Portfolio Analysis', 'Protection Check', 'Peer Benchmarks'].map(tag => (
                 <span key={tag} className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.9)' }}>
                   {tag}
                 </span>
               ))}
             </div>
             <button
-              data-testid="unlock-deep-btn"
-              onClick={() => navigate('/deep-assessment')}
+              data-testid="unlock-ignite-btn"
+              onClick={handleUnlockIgnite}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95"
               style={{ background: '#FF9933', color: '#fff', boxShadow: '0 4px 20px rgba(255,153,51,0.4)' }}
             >
-              Start Deep Diagnostic
+              <Sparkles className="w-4 h-4" />
+              Unlock Ignite Dashboard
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
