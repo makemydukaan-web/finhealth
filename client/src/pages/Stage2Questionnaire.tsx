@@ -433,7 +433,7 @@ function isStepValid(step: number, data: Stage2Data): boolean {
   if (step === 2) return true; // Optional
   if (step === 3) return true; // Optional
   if (step === 4) return true; // Optional
-  if (step === 5) return data.retirementAge > 0 && data.riskProfile !== 'Moderate'; // Must select
+  if (step === 5) return data.retirementAge > 0; // Risk profile has default, so always valid
   return true;
 }
 
