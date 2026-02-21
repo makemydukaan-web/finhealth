@@ -1,6 +1,3 @@
-/* Import DM fonts for Ignite Dashboard */
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap');
-
 @import "tailwindcss";
 @import "tw-animate-css";
 
