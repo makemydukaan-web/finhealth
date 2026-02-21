@@ -116,7 +116,7 @@ export default function Home() {
           )}
 
           {state.currentStep === 10 && result && (
-            <ResultsView key="results" result={result} />
+            <ResultsView key="results" result={result} answers={state.answers} />
           )}
         </AnimatePresence>
       </main>
